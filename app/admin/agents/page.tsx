@@ -2,40 +2,46 @@
 
 import { useState, useEffect } from "react";
 import {
-  Package,
+  Users,
   Plus,
   Edit,
   Trash2,
-  Users,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  X,
-  Check,
+  Phone,
+  User,
+  Shield,
   AlertCircle,
+  Check,
+  X,
 } from "lucide-react";
-import { getAllKits, createKit, updateKit, deleteKit, Kit } from "@/lib/api/kits";
-import { getAllSeasons, Season } from "@/lib/api/seasons";
+import {
+  getAllAgents,
+  createAgent,
+  updateAgent,
+  deleteAgent,
+  CreateAgentData,
+  UpdateAgentData,
+} from "@/lib/api/agents";
 
-export default function KitsPage() {
-  const [kits, setKits] = useState<Kit[]>([]);
-  const [seasons, setSeasons] = useState<Season[]>([]);
+export default function AgentsPage() {
+  const [agents, setAgents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedKit, setSelectedKit] = useState<Kit | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
-  
+
   // Formulaire
   const [formData, setFormData] = useState({
-    label: "",
-    saisonId: "",
-    amount: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    adminId: "",
+    password: "",
   });
 
-  // Charger les kits et saisons au montage du composant
+  // Charger les agents au montage du composant
   useEffect(() => {
     loadData();
   }, []);
@@ -43,12 +49,8 @@ export default function KitsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [kitsData, seasonsData] = await Promise.all([
-        getAllKits(),
-        getAllSeasons()
-      ]);
-      setKits(kitsData);
-      setSeasons(seasonsData);
+      const agentsData = await getAllAgents();
+      setAgents(agentsData);
       setError("");
     } catch (err) {
       setError("Erreur lors du chargement des données");
@@ -58,88 +60,91 @@ export default function KitsPage() {
     }
   };
 
-  const handleCreateKit = async (e: React.FormEvent) => {
+  const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createKit({
-        label: formData.label,
-        saisonId: formData.saisonId,
-        amount: parseFloat(formData.amount),
+      await createAgent({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        adminId: "cmexjtbxt0000otmogvfedp0j",// Remplacez par l'ID de l'admin connecté
+        password: formData.password,
       });
-      setSuccess("Kit créé avec succès");
+      setSuccess("Agent créé avec succès");
       setShowCreateModal(false);
       resetForm();
       loadData();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError("Erreur lors de la création du kit");
+      setError("Erreur lors de la création de l'agent");
       console.error(err);
     }
   };
 
-  const handleUpdateKit = async (e: React.FormEvent) => {
+  const handleUpdateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedKit?.id) return;
-    
+    if (!selectedAgent?.id) return;
+
     try {
-      await updateKit(selectedKit.id, {
-        label: formData.label,
-        saisonId: formData.saisonId,
-        amount: parseFloat(formData.amount),
+      await updateAgent(selectedAgent.id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        password: formData.password,
       });
-      setSuccess("Kit mis à jour avec succès");
+      setSuccess("Agent mis à jour avec succès");
       setShowEditModal(false);
-      setSelectedKit(null);
+      setSelectedAgent(null);
       resetForm();
       loadData();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError("Erreur lors de la mise à jour du kit");
+      setError("Erreur lors de la mise à jour de l'agent");
       console.error(err);
     }
   };
 
-  const handleDeleteKit = async () => {
-    if (!selectedKit?.id) return;
-    
+  const handleDeleteAgent = async () => {
+    if (!selectedAgent?.id) return;
+
     try {
-      await deleteKit(selectedKit.id);
-      setSuccess("Kit supprimé avec succès");
+      await deleteAgent(selectedAgent.id);
+      setSuccess("Agent supprimé avec succès");
       setShowDeleteModal(false);
-      setSelectedKit(null);
+      setSelectedAgent(null);
       loadData();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError("Erreur lors de la suppression du kit");
+      setError("Erreur lors de la suppression de l'agent");
       console.error(err);
     }
   };
 
-  const openEditModal = (kit: Kit) => {
-    setSelectedKit(kit);
+  const openEditModal = (agent: any) => {
+    setSelectedAgent(agent);
     setFormData({
-      label: kit.label,
-      saisonId: kit.saisonId,
-      amount: kit.amount.toString(),
+      firstName: agent.firstName,
+      lastName: agent.lastName,
+      phone: agent.phone,
+      adminId: agent.adminId || "",
+      password: "",
     });
     setShowEditModal(true);
   };
 
-  const openDeleteModal = (kit: Kit) => {
-    setSelectedKit(kit);
+  const openDeleteModal = (agent: any) => {
+    setSelectedAgent(agent);
     setShowDeleteModal(true);
   };
 
   const resetForm = () => {
     setFormData({
-      label: "",
-      saisonId: "",
-      amount: "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+      adminId: "",
+      password: "",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('fr-FR') + ' FCFA';
   };
 
   const formatDate = (dateString: string) => {
@@ -151,23 +156,18 @@ export default function KitsPage() {
     });
   };
 
-  const getSeasonLabel = (saisonId: string) => {
-    const season = seasons.find(s => s.id?.toString() === saisonId);
-    return season?.label || 'Saison inconnue';
-  };
+  const totalAgents = agents.length;
+  const agentsWithClients = agents.filter(agent => agent.clients && agent.clients.length > 0).length;
+  const totalClients = agents.reduce((sum, agent) => sum + (agent.clients ? agent.clients.length : 0), 0);
 
-  const totalKits = kits.length;
-  const totalAmount = kits.reduce((sum, kit) => sum + kit.amount, 0);
-  const averageAmount = totalKits > 0 ? totalAmount / totalKits : 0;
-
-  // Grouper les kits par couleur pour l'affichage
-  const kitColors = [
-    "from-yellow-400 to-orange-500",
+  // Grouper les agents par couleur pour l'affichage
+  const agentColors = [
     "from-blue-400 to-indigo-500",
     "from-green-400 to-teal-500",
     "from-purple-400 to-pink-500",
-    "from-red-400 to-rose-500",
+    "from-orange-400 to-red-500",
     "from-cyan-400 to-blue-500",
+    "from-emerald-400 to-green-500",
   ];
 
   return (
@@ -179,7 +179,7 @@ export default function KitsPage() {
           <span>{success}</span>
         </div>
       )}
-      
+
       {error && (
         <div className="fixed top-20 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-2 animate-in slide-in-from-top duration-300">
           <AlertCircle className="w-5 h-5" />
@@ -191,10 +191,10 @@ export default function KitsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Gestion des Kits
+            Gestion des Agents
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
-            Créez et gérez vos kits de souscription pour les saisons
+            Gérez vos agents et leurs clients
           </p>
         </div>
         <button
@@ -205,20 +205,20 @@ export default function KitsPage() {
           className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 w-full sm:w-auto"
         >
           <Plus className="w-5 h-5" />
-          <span className="font-medium">Créer un Kit</span>
+          <span className="font-medium">Créer un Agent</span>
         </button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm mb-1">Kits Actifs</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalKits}</p>
+              <p className="text-gray-600 text-xs sm:text-sm mb-1">Agents Actifs</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalAgents}</p>
             </div>
             <div className="p-3 bg-blue-50 rounded-xl">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
           </div>
         </div>
@@ -226,11 +226,11 @@ export default function KitsPage() {
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm mb-1">Saisons</p>
-              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{seasons.length}</p>
+              <p className="text-gray-600 text-xs sm:text-sm mb-1">Agents avec Clients</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{agentsWithClients}</p>
             </div>
             <div className="p-3 bg-green-50 rounded-xl">
-              <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+              <User className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
           </div>
         </div>
@@ -238,42 +238,26 @@ export default function KitsPage() {
         <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-xs sm:text-sm mb-1">Montant Total</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                {(totalAmount / 1000000).toFixed(1)}M
-              </p>
+              <p className="text-gray-600 text-xs sm:text-sm mb-1">Total Clients</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalClients}</p>
             </div>
             <div className="p-3 bg-purple-50 rounded-xl">
-              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-xs sm:text-sm mb-1">Montant Moyen</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                {(averageAmount / 1000).toFixed(0)}K
-              </p>
-            </div>
-            <div className="p-3 bg-orange-50 rounded-xl">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Kits Grid */}
+      {/* Agents Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-      ) : kits.length === 0 ? (
+      ) : agents.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-100">
-          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun kit</h3>
-          <p className="text-gray-500 mb-6">Commencez par créer votre premier kit</p>
+          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun agent</h3>
+          <p className="text-gray-500 mb-6">Commencez par créer votre premier agent</p>
           <button
             onClick={() => {
               resetForm();
@@ -282,35 +266,38 @@ export default function KitsPage() {
             className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-300"
           >
             <Plus className="w-5 h-5" />
-            <span>Créer un Kit</span>
+            <span>Créer un Agent</span>
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {kits.map((kit, index) => {
-            const colorClass = kitColors[index % kitColors.length];
+          {agents.map((agent, index) => {
+            const colorClass = agentColors[index % agentColors.length];
+            const clientCount = agent.clients ? agent.clients.length : 0;
 
             return (
               <div
-                key={kit.id}
+                key={agent.id}
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group"
               >
-                {/* Kit Header with Gradient */}
+                {/* Agent Header with Gradient */}
                 <div className={`p-4 sm:p-6 bg-gradient-to-br ${colorClass} text-white relative overflow-hidden`}>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
                   <div className="relative z-10">
-                    <Package className="w-6 h-6 sm:w-8 sm:h-8 mb-3" />
-                    <h3 className="text-lg sm:text-xl font-bold mb-1">{kit.label}</h3>
-                    <p className="text-xs sm:text-sm opacity-90">{getSeasonLabel(kit.saisonId)}</p>
+                    <Users className="w-6 h-6 sm:w-8 sm:h-8 mb-3" />
+                    <h3 className="text-lg sm:text-xl font-bold mb-1">
+                      {agent.firstName} {agent.lastName}
+                    </h3>
+                    <p className="text-xs sm:text-sm opacity-90">{agent.phone}</p>
                   </div>
                 </div>
 
-                {/* Kit Details */}
+                {/* Agent Details */}
                 <div className="p-4 sm:p-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Prix</span>
+                    <span className="text-sm text-gray-600">Clients</span>
                     <span className="text-lg sm:text-xl font-bold text-gray-900">
-                      {formatCurrency(kit.amount)}
+                      {clientCount}
                     </span>
                   </div>
 
@@ -318,7 +305,7 @@ export default function KitsPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Créé le</span>
                       <span className="font-medium text-gray-900">
-                        {kit.createdAt ? formatDate(kit.createdAt) : 'N/A'}
+                        {agent.createdAt ? formatDate(agent.createdAt) : 'N/A'}
                       </span>
                     </div>
                   </div>
@@ -326,14 +313,14 @@ export default function KitsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                     <button
-                      onClick={() => openEditModal(kit)}
+                      onClick={() => openEditModal(agent)}
                       className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                       <span className="text-sm font-medium">Modifier</span>
                     </button>
                     <button
-                      onClick={() => openDeleteModal(kit)}
+                      onClick={() => openDeleteModal(agent)}
                       className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
@@ -346,13 +333,13 @@ export default function KitsPage() {
         </div>
       )}
 
-      {/* Create Kit Modal */}
+      {/* Create Agent Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Créer un Nouveau Kit
+                Créer un Nouvel Agent
               </h3>
               <button
                 onClick={() => {
@@ -364,50 +351,56 @@ export default function KitsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateKit} className="space-y-4">
+            <form onSubmit={handleCreateAgent} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom du Kit *
+                  Prénom *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  placeholder="Ex: Kit Premium"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Ex: Jean"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Saison *
+                  Nom *
                 </label>
-                <select
+                <input
+                  type="text"
                   required
-                  value={formData.saisonId}
-                  onChange={(e) => setFormData({ ...formData, saisonId: e.target.value })}
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Ex: Dupont"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Sélectionner une saison</option>
-                  {seasons.map((season) => (
-                    <option key={season.id} value={season.id}>
-                      {season.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Montant (FCFA) *
+                  Téléphone *
                 </label>
                 <input
-                  type="number"
+                  type="tel"
                   required
-                  min="0"
-                  step="1000"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="300000"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Ex: +2250102030405"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mot de passe *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="••••••••"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -434,18 +427,18 @@ export default function KitsPage() {
         </div>
       )}
 
-      {/* Edit Kit Modal */}
-      {showEditModal && selectedKit && (
+      {/* Edit Agent Modal */}
+      {showEditModal && selectedAgent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 animate-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Modifier le Kit
+                Modifier l'Agent
               </h3>
               <button
                 onClick={() => {
                   setShowEditModal(false);
-                  setSelectedKit(null);
+                  setSelectedAgent(null);
                   resetForm();
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -453,50 +446,55 @@ export default function KitsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleUpdateKit} className="space-y-4">
+            <form onSubmit={handleUpdateAgent} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom du Kit *
+                  Prénom *
                 </label>
                 <input
                   type="text"
                   required
-                  value={formData.label}
-                  onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                  placeholder="Ex: Kit Premium"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Ex: Jean"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Saison *
+                  Nom *
                 </label>
-                <select
+                <input
+                  type="text"
                   required
-                  value={formData.saisonId}
-                  onChange={(e) => setFormData({ ...formData, saisonId: e.target.value })}
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Ex: Dupont"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Sélectionner une saison</option>
-                  {seasons.map((season) => (
-                    <option key={season.id} value={season.id}>
-                      {season.label}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Montant (FCFA) *
+                  Téléphone *
                 </label>
                 <input
-                  type="number"
+                  type="tel"
                   required
-                  min="0"
-                  step="1000"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="300000"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Ex: +2250102030405"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nouveau mot de passe
+                </label>
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="•••••••• (laisser vide pour ne pas changer)"
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -505,7 +503,7 @@ export default function KitsPage() {
                   type="button"
                   onClick={() => {
                     setShowEditModal(false);
-                    setSelectedKit(null);
+                    setSelectedAgent(null);
                     resetForm();
                   }}
                   className="flex-1 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
@@ -525,31 +523,31 @@ export default function KitsPage() {
       )}
 
       {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedKit && (
+      {showDeleteModal && selectedAgent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 animate-in zoom-in duration-200">
             <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">
-              Supprimer le Kit
+              Supprimer l'Agent
             </h3>
             <p className="text-gray-600 text-center mb-6">
-              Êtes-vous sûr de vouloir supprimer le kit <strong>{selectedKit.label}</strong> ? 
+              Êtes-vous sûr de vouloir supprimer l'agent <strong>{selectedAgent.firstName} {selectedAgent.lastName}</strong> ?
               Cette action est irréversible.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteModal(false);
-                  setSelectedKit(null);
+                  setSelectedAgent(null);
                 }}
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
               >
                 Annuler
               </button>
               <button
-                onClick={handleDeleteKit}
+                onClick={handleDeleteAgent}
                 className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors"
               >
                 Supprimer
